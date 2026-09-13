@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ЦОДД — Расширенный ремонт светофора</title>
+  <link rel="icon" type="image/png" href="https://ru1.cdn.pixsafe.online/albums/Ial0e/image2_gQM1W.png">
+  
+  <style>
+    :root {
+      --primary: #70B21E;
+      --bg-color: #0b0d10;
+      --card-bg: #14171f;
+      --text-color: #E2E8F0;
+      --text-muted: #94A3B8;
+      --border-color: #2a3241;
+      --danger: #EF4444;
+      --warning: #F59E0B;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .game-container {
+      background: var(--card-bg);
+      width: 100%;
+      max-width: 520px;
+      border-radius: 20px;
+      padding: 25px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.7);
+      border: 1px solid var(--border-color);
+      text-align: center;
+    }
+
+    .top-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 12px;
+    }
+
+    .logo {
+      height: 32px;
+      object-fit: contain;
+    }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    h2 { font-size: 1.3rem; margin-bottom: 8px; }
+    .desc { color: var(--text-muted); font-size: 0.88rem; margin-bottom: 20px; line-height: 1.4; }
+
+    .btn {
+      background: var(--primary);
+      color: #121212;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      width: 100%;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.9; }
+
+    .cabinet-box {
+      background: radial-gradient(circle, #1a202c 0%, #11151c 100%);
+      border: 3px solid #333d4f;
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 20px;
+      position: relative;
+      min-height: 260px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+    }
+
+    .traffic-cabinet {
+      width: 220px;
+      height: 230px;
+      background: linear-gradient(135deg, #28303e 0%, #1b212c 100%);
+      border: 4px solid #4a5568;
+      border-radius: 8px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+      transition: all 0.3s;
+    }
+
+    .bolt {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      background: radial-gradient(circle, #cbd5e1 0%, #64748b 100%);
+      border: 2px solid #0f172a;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-weight: bold;
+      color: #0f172a;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+      transition: transform 0.2s;
+      z-index: 10;
+    }
+
+    .bolt.unscrewed {
+      background: radial-gradient(circle, #86efac 0%, #22c55e 100%);
+      transform: scale(0.85) rotate(45deg);
+    }
+
+    .bolt-tl { top: 8px; left: 8px; }
+    .bolt-tr { top: 8px; right: 8px; }
+    .bolt-bl { bottom: 8px; left: 8px; }
+    .bolt-br { bottom: 8px; right: 8px; }
+
+    .cabinet-interior {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 10px;
+    }
+
+    .components-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .internal-item {
+      background: linear-gradient(145deg, #1e2430, #151a23);
+      border: 2px solid #374151;
+      border-radius: 6px;
+      padding: 8px;
+      text-align: center;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      position: relative;
+    }
+
+    .internal-item.broken {
+      border-color: var(--danger);
+      background: linear-gradient(145deg, #321818, #1f1212);
+      color: #fca5a5;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+    }
+
+    .internal-item.fixed {
+      border-color: var(--primary);
+      background: linear-gradient(145deg, #162c1a, #111e14);
+      color: #86efac;
+    }
+
+    .item-bolt {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: #94a3b8;
+      border: 1px solid #000;
+      border-radius: 50%;
+      top: 3px;
+      right: 3px;
+      font-size: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #000;
+      cursor: pointer;
+    }
+    .item-bolt.unscrewed {
+      background: var(--warning);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-container">
+    <div class="top-info">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <img src="https://ru1.cdn.pixsafe.online/albums/5tjRA/image1_ZJq8O.png" class="logo" alt="ЦОДД">
+        <b>Ремонт узла ЦОДД</b>
+      </div>
+      <div>Таймер: <span id="time-left" style="color: var(--warning);">40</span>с</div>
+    </div>
+
+    <!-- ЭКРАН 1: СТАРТ -->
+    <div id="screen-start" class="screen active">
+      <h2>Диагностический выезд</h2>
+      <p class="desc">В распределительном шкафу светофора зафиксирован сбой. Системный анализ определит поврежденный элемент. Подготовьте инструмент.</p>
+      <button class="btn" onclick="startGame()">Начать диагностику</button>
+    </div>
+
+    <!-- ЭКРАН 2: ИГРА -->
+    <div id="screen-2" class="screen">
+      <h2 id="instruction-title">Шаг 1: Снятие крышки</h2>
+      <p class="desc" id="instruction-desc">Открутите 4 внешних болта монтажной крышки.</p>
+
+      <div class="cabinet-box">
+        <div class="traffic-cabinet" id="cabinet">
+          <!-- 4 внешних болта -->
+          <div class="bolt bolt-tl" onclick="onCoverBoltClick(this)">✖</div>
+          <div class="bolt bolt-tr" onclick="onCoverBoltClick(this)">✖</div>
+          <div class="bolt bolt-bl" onclick="onCoverBoltClick(this)">✖</div>
+          <div class="bolt bolt-br" onclick="onCoverBoltClick(this)">✖</div>
+
+          <!-- Внутренности -->
+          <div class="cabinet-interior" id="interior">
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 2px;">Внутренний монтажный блок:</div>
+            <div class="components-grid" id="components-grid"></div>
+            <div id="action-hint" style="font-size: 0.7rem; color: var(--warning); margin-top: 4px;">Найдите и демонтируйте сломанный элемент!</div>
+          </div>
+        </div>
+      </div>
+      <div id="progress-info" style="font-size: 0.82rem; color: var(--text-muted);">Статус: Откручивание крышки (0/4)</div>
+    </div>
+
+    <!-- ЭКРАН 3: ФИНИШ -->
+    <div id="screen-3" class="screen">
+      <div id="end-icon" style="font-size: 3rem; margin-bottom: 10px;">🏆</div>
+      <h2 id="end-title">Ремонт успешно завершен!</h2>
+      <p class="desc" id="end-desc">Неисправный узел заменен, шкаф герметично закрыт. Премия зачислена.</p>
+      <button class="btn" onclick="startGame()">Следующий вызов</button>
+    </div>
+  </div>
+
+<script>
+  let gameTimer = null;
+  let timeLeft = 40;
+  let stage = 1; 
+  // 1 - открутить крышку (4 болта)
+  // 2 - открутить болты сломанной детали
+  // 3 - заменить сломанную деталь на новую по клику
+  // 4 - закрутить болты новой детали
+  // 5 - ослабить болты крышки для закрытия
+  // 6 - окончательно закрутить крышку
+
+  let coverBoltsCount = 0;
+  let prepCloseCount = 0;
+  let finalCloseCount = 0;
+
+  const componentsPool = [
+    { id: 'board', name: '🎛️ Плата управления' },
+    { id: 'power', name: '⚡ Блок питания 220В' },
+    { id: 'modem', name: '📡 Модуль связи 4G' }
+  ];
+
+  let currentComponents = [];
+  let brokenIndex = 0;
+
+  function startGame() {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-2').classList.add('active');
+
+    timeLeft = 40;
+    stage = 1;
+    coverBoltsCount = 0;
+    prepCloseCount = 0;
+    finalCloseCount = 0;
+
+    document.getElementById('time-left').innerText = timeLeft;
+    document.getElementById('instruction-title').innerText = "Шаг 1: Снятие крышки";
+    document.getElementById('instruction-desc').innerText = "Открутите 4 внешних болта монтажной крышки.";
+    document.getElementById('progress-info').innerText = "Статус: Откручивание крышки (0/4)";
+    
+    document.getElementById('interior').style.display = 'none';
+    document.getElementById('cabinet').style.background = "linear-gradient(135deg, #28303e 0%, #1b212c 100%)";
+
+    currentComponents = JSON.parse(JSON.stringify(componentsPool));
+    brokenIndex = Math.floor(Math.random() * currentComponents.length);
+    currentComponents.forEach((c, idx) => {
+      c.isBroken = (idx === brokenIndex);
+      c.isFixed = false;
+      c.boltUnscrewed = false;
+    });
+
+    renderComponents();
+
+    const bolts = document.querySelectorAll('.bolt');
+    bolts.forEach(b => {
+      b.style.display = 'flex';
+      b.classList.remove('unscrewed');
+      b.innerText = "✖";
+    });
+
+    startGlobalTimer();
+  }
+
+  function startGlobalTimer() {
+    clearInterval(gameTimer);
+    gameTimer = setInterval(() => {
+      timeLeft--;
+      document.getElementById('time-left').innerText = timeLeft;
+      if (timeLeft <= 0) {
+        clearInterval(gameTimer);
+        endGame(false, "Время вышло! Объект остался неисправным.");
+      }
+    }, 1000);
+  }
+
+  function renderComponents() {
+    const grid = document.getElementById('components-grid');
+    grid.innerHTML = '';
+
+    currentComponents.forEach((comp, idx) => {
+      const div = document.createElement('div');
+      div.className = `internal-item ${comp.isBroken && !comp.isFixed ? 'broken' : ''} ${comp.isFixed ? 'fixed' : ''}`;
+      
+      let statusText = comp.isFixed ? "✅ Исправно" : (comp.isBroken ? "⚠️ ПОЛОМКА" : "✅ Штатно");
+
+      div.innerHTML = `
+        <div>${comp.name}</div>
+        <div style="font-size:0.6rem; margin-top:2px;">${statusText}</div>
+        <div class="item-bolt ${comp.boltUnscrewed ? 'unscrewed' : ''}" onclick="handleComponentClick(${idx})">
+          ${comp.boltUnscrewed ? '✓' : '✖'}
+        </div>
+      `;
+      grid.appendChild(div);
+    });
+  }
+
+  // Централизованный обработчик кликов по внешним болтам крышки
+  function onCoverBoltClick(bolt) {
+    if (bolt.classList.contains('unscrewed') && stage !== 5) return;
+
+    if (stage === 1) {
+      bolt.classList.add('unscrewed');
+      bolt.innerText = "✓";
+      coverBoltsCount++;
+      document.getElementById('progress-info').innerText = `Статус: Откручивание крышки (${coverBoltsCount}/4)`;
+
+      if (coverBoltsCount === 4) {
+        setTimeout(() => {
+          stage = 2;
+          document.getElementById('cabinet').style.background = "linear-gradient(135deg, #161b22 0%, #0d1117 100%)";
+          document.querySelectorAll('.bolt').forEach(b => b.style.display = 'none');
+          document.getElementById('interior').style.display = 'flex';
+
+          document.getElementById('instruction-title').innerText = "Шаг 2: Демонтаж поврежденной детали";
+          document.getElementById('instruction-desc').innerText = "Найдите сломанный элемент и открутите крепежный болтик на нем.";
+          document.getElementById('action-hint').innerText = "Кликните по болтику сломанного модуля!";
+          document.getElementById('progress-info').innerText = "Статус: Поиск и демонтаж неисправности";
+        }, 400);
+      }
+    } else if (stage === 5) {
+      // Шаг подготовки к закрытию крышки
+      if (!bolt.classList.contains('unscrewed')) {
+        bolt.classList.add('unscrewed');
+        bolt.innerText = "✓";
+        prepCloseCount++;
+        document.getElementById('progress-info').innerText = `Статус: Подготовка крышки к закрытию (${prepCloseCount}/4)`;
+
+        if (prepCloseCount === 4) {
+          stage = 6;
+          document.getElementById('instruction-title').innerText = "Шаг 6: Финальная затяжка";
+          document.getElementById('instruction-desc').innerText = "Крышка захлопнулась! Закрутите все 4 болта до конца.";
+          document.getElementById('progress-info').innerText = `Статус: Финальная затяжка (0/4)`;
+
+          const bolts = document.querySelectorAll('.bolt');
+          bolts.forEach(b => {
+            b.classList.remove('unscrewed');
+            b.innerText = "✖";
+          });
+        }
+      }
+    } else if (stage === 6) {
+      // Финальное закручивание крышки
+      if (!bolt.classList.contains('unscrewed')) {
+        bolt.classList.add('unscrewed');
+        bolt.innerText = "✓";
+        finalCloseCount++;
+        document.getElementById('progress-info').innerText = `Статус: Закручивание крышки (${finalCloseCount}/4)`;
+
+        if (finalCloseCount === 4) {
+          clearInterval(gameTimer);
+          endGame(true, "Светофор полностью отремонтирован и защищен от влаги! Премия: 3000$");
+        }
+      }
+    }
+  }
+
+  function handleComponentClick(idx) {
+    const comp = currentComponents[idx];
+
+    if (stage === 2) {
+      if (!comp.isBroken) {
+        alert("Этот узел исправен! Проверьте другой компонент.");
+        timeLeft = Math.max(0, timeLeft - 3);
+        return;
+      }
+      comp.boltUnscrewed = true;
+      stage = 3;
+      document.getElementById('instruction-title').innerText = "Шаг 3: Замена детали";
+      document.getElementById('instruction-desc').innerText = "Кликните по демонтированной сломанной детали, чтобы установить новую запчасть из ремкомплекта.";
+      document.getElementById('action-hint').innerText = "Нажмите на сломанный модуль для замены!";
+      
+      renderComponents();
+      const itemEl = document.querySelectorAll('.internal-item')[idx];
+      itemEl.style.cursor = "pointer";
+      itemEl.onclick = () => replaceBrokenComponent(idx);
+
+    } else if (stage === 4) {
+      if (idx !== brokenIndex) return;
+      comp.boltUnscrewed = false;
+      comp.isFixed = true;
+      stage = 5;
+
+      document.getElementById('interior').style.display = 'none';
+      document.getElementById('cabinet').style.background = "linear-gradient(135deg, #28303e 0%, #1b212c 100%)";
+
+      document.getElementById('instruction-title').innerText = "Шаг 5: Закрытие шкафа";
+      document.getElementById('instruction-desc').innerText = "Крышка не защелкивается из-за торчащих болтов. Сначала ослабьте каждый внешний болт (кликните по ним).";
+      document.getElementById('progress-info').innerText = "Статус: Подготовка крышки к закрытию (0/4)";
+
+      const bolts = document.querySelectorAll('.bolt');
+      bolts.forEach(b => {
+        b.style.display = 'flex';
+        b.classList.remove('unscrewed');
+        b.innerText = "✖";
+      });
+    }
+  }
+
+  function replaceBrokenComponent(idx) {
+    if (stage !== 3) return;
+    const comp = currentComponents[idx];
+    comp.name = "✨ Новый модуль";
+    comp.isBroken = false;
+    comp.isFixed = false;
+    
+    stage = 4;
+    document.getElementById('instruction-title').innerText = "Шаг 4: Закрепление нового модуля";
+    document.getElementById('instruction-desc').innerText = "Закрутите крепежный болтик на установленном модуле.";
+    document.getElementById('action-hint').innerText = "Нажмите на болтик нового модуля, чтобы затянуть его.";
+    
+    renderComponents();
+  }
+
+  function endGame(success, message) {
+    clearInterval(gameTimer);
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-3').classList.add('active');
+
+    document.getElementById('end-icon').innerText = success ? "🎉" : "❌";
+    document.getElementById('end-title').innerText = success ? "Ремонт завершен!" : "Сбой ремонта!";
+    document.getElementById('end-desc').innerText = message;
+  }
+</script>
+
+</body>
+</html>
